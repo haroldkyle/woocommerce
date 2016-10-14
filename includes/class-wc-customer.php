@@ -255,21 +255,16 @@ class WC_Customer extends WC_Legacy_Customer {
 	 * @return integer
 	 */
 	public function get_order_count() {
-		$count = get_user_meta( $this->get_id(), '_order_count', true );
+		global $wpdb;
 
-		if ( '' === $count ) {
-			global $wpdb;
-
-			$count = $wpdb->get_var( "SELECT COUNT(*)
-				FROM $wpdb->posts as posts
-				LEFT JOIN {$wpdb->postmeta} AS meta ON posts.ID = meta.post_id
-				WHERE   meta.meta_key = '_customer_user'
-				AND     posts.post_type = 'shop_order'
-				AND     posts.post_status IN ( '" . implode( "','", array_map( 'esc_sql', array_keys( wc_get_order_statuses() ) ) ) . "' )
-				AND     meta_value = '" . esc_sql( $this->get_id() ) . "'
-			" );
-			update_user_meta( $this->get_id(), '_order_count', $count );
-		}
+		$count = $wpdb->get_var( "SELECT COUNT(*)
+			FROM $wpdb->posts as posts
+			LEFT JOIN {$wpdb->postmeta} AS meta ON posts.ID = meta.post_id
+			WHERE   meta.meta_key = '_customer_user'
+			AND     posts.post_type = 'shop_order'
+			AND     posts.post_status IN ( '" . implode( "','", array_map( 'esc_sql', array_keys( wc_get_order_statuses() ) ) ) . "' )
+			AND     meta_value = '" . esc_sql( $this->get_id() ) . "'
+		" );
 
 		return absint( $count );
 	}
@@ -280,26 +275,21 @@ class WC_Customer extends WC_Legacy_Customer {
 	 * @return float
 	 */
 	public function get_total_spent() {
-		$spent = get_user_meta( $this->get_id(), '_money_spent', true );
+		global $wpdb;
 
-		if ( '' === $spent ) {
-			global $wpdb;
+		$spent = $wpdb->get_var( "SELECT SUM(meta2.meta_value)
+			FROM $wpdb->posts as posts
+			LEFT JOIN {$wpdb->postmeta} AS meta ON posts.ID = meta.post_id
+			LEFT JOIN {$wpdb->postmeta} AS meta2 ON posts.ID = meta2.post_id
+			WHERE   meta.meta_key       = '_customer_user'
+			AND     meta.meta_value     = '" . esc_sql( $this->get_id() ) . "'
+			AND     posts.post_type     = 'shop_order'
+			AND     posts.post_status   IN ( 'wc-completed', 'wc-processing' )
+			AND     meta2.meta_key      = '_order_total'
+		" );
 
-			$spent = $wpdb->get_var( "SELECT SUM(meta2.meta_value)
-				FROM $wpdb->posts as posts
-				LEFT JOIN {$wpdb->postmeta} AS meta ON posts.ID = meta.post_id
-				LEFT JOIN {$wpdb->postmeta} AS meta2 ON posts.ID = meta2.post_id
-				WHERE   meta.meta_key       = '_customer_user'
-				AND     meta.meta_value     = '" . esc_sql( $this->get_id() ) . "'
-				AND     posts.post_type     = 'shop_order'
-				AND     posts.post_status   IN ( 'wc-completed', 'wc-processing' )
-				AND     meta2.meta_key      = '_order_total'
-			" );
-
-			if ( ! $spent ) {
-				$spent = 0;
-			}
-			update_user_meta( $this->get_id(), '_money_spent', $spent );
+		if ( ! $spent ) {
+			$spent = 0;
 		}
 
 		return wc_format_decimal( $spent, 2 );
