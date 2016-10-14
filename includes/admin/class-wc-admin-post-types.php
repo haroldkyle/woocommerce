@@ -739,6 +739,7 @@ class WC_Admin_Post_Types {
 					$user_info = get_userdata( $the_order->get_user_id() );
 				}
 
+				$user_name = null;
 				if ( ! empty( $user_info ) ) {
 
 					$username = '<a href="user-edit.php?user_id=' . absint( $user_info->ID ) . '">';
@@ -760,6 +761,7 @@ class WC_Admin_Post_Types {
 						$username = __( 'Guest', 'woocommerce' );
 					}
 				}
+				$username = apply_filters( 'woocommerce_order_title_name', $username, $user_info, $the_order );
 
 				printf( _x( '%1$s by %2$s', 'Order number by X', 'woocommerce' ), '<a href="' . admin_url( 'post.php?post=' . absint( $post->ID ) . '&action=edit' ) . '" class="row-title"><strong>#' . esc_attr( $the_order->get_order_number() ) . '</strong></a>', $username );
 
